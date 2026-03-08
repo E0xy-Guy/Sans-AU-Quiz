@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiverse Soul Evaluation</title>
+    <style>
+        :root { --soul-red: #ff0000; --soul-orange: #ffa500; --soul-yellow: #ffff00; --soul-green: #00ff00; --soul-cyan: #00ffff; --soul-blue: #0000ff; --soul-purple: #800080; }
+        body { background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 10px; }
+        
+        #quiz-box { border: 4px solid #fff; padding: 25px; width: 95%; max-width: 600px; text-align: center; background: #000; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+        h1 { font-size: 1.2rem; letter-spacing: 2px; color: #fff; margin-bottom: 15px; border-bottom: 2px solid #fff; padding-bottom: 5px; }
+        #question-text { font-size: 1.1rem; margin: 20px 0; min-height: 60px; color: #eee; line-height: 1.4; }
+        
+        .options-container { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        button { background: #000; color: #fff; border: 2px solid #fff; padding: 12px; font-family: inherit; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+        button:hover { background: #fff; color: #000; }
+        button.selected { border-color: var(--soul-yellow); color: var(--soul-yellow); background: #111; }
+        
+        #next-btn { margin-top: 20px; width: 100%; border-color: var(--soul-yellow); color: var(--soul-yellow); display: none; }
+
+        /* Enhanced Soul Bars Section */
+        #traits-container { width: 95%; max-width: 600px; margin-top: 20px; background: #000; padding: 15px; border: 2px solid #fff; }
+        .trait-row { display: flex; flex-direction: column; margin-bottom: 10px; }
+        .trait-label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .bar-bg { width: 100%; height: 12px; background: #222; border: 1px solid #444; position: relative; }
+        .bar-fill { height: 100%; width: 50%; transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        #glitch-btn { position: fixed; bottom: 5px; right: 5px; background: none; border: none; color: #ff0000; font-size: 0.6rem; cursor: pointer; display: none; opacity: 0.4; z-index: 1000; }
+        #result-screen { display: none; }
+        .au-title { font-size: 1.8rem; margin-bottom: 15px; color: var(--soul-yellow); }
+    </style>
+</head>
+<body>
+
+<div id="quiz-box">
+    <div id="quiz-ui">
+        <h1>[ SOUL SCAN: <span id="progress-header">01</span>/30 ]</h1>
+        <div id="question-text">Syncing...</div>
+        <div class="options-container" id="options"></div>
+        <button id="next-btn" onclick="processAnswer()">CONFIRM CHOICE --></button>
+    </div>
+
+    <div id="result-screen">
+        <div class="au-title" id="res-name"></div>
+        <p id="res-desc" style="line-height: 1.6;"></p>
+        <button onclick="location.reload()" style="margin-top: 20px; width: 100%;">RE-SCAN SOUL</button>
+    </div>
+</div>
+
+<div id="traits-container">
+    <div class="trait-row"><div class="trait-label"><span>LV (Violence)</span><span id="lv-val">10</span></div><div class="bar-bg"><div id="lv-bar" class="bar-fill" style="background: var(--soul-red)"></div></div></div>
+    <div class="trait-row"><div class="trait-label"><span>Determination</span><span id="dt-val">10</span></div><div class="bar-bg"><div id="dt-bar" class="bar-fill" style="background: var(--soul-red)"></div></div></div>
+    <div class="trait-row"><div class="trait-label"><span>Bravery</span><span id="br-val">10</span></div><div class="bar-bg"><div id="br-bar" class="bar-fill" style="background: var(--soul-orange)"></div></div></div>
+    <div class="trait-row"><div class="trait-label"><span>Justice</span><span id="js-val">10</span></div><div class="bar-bg"><div id="js-bar" class="bar-fill" style="background: var(--soul-yellow)"></div></div></div>
+    <div class="trait-row"><div class="trait-label"><span>Integrity</span><span id="it-val">10</span></div><div class="bar-bg"><div id="it-bar" class="bar-fill" style="background: var(--soul-blue)"></div></div></div>
+    <div class="trait-row"><div class="trait-label"><span>Patience</span><span id="pt-val">10</span></div><div class="bar-bg"><div id="pt-bar" class="bar-fill" style="background: var(--soul-cyan)"></div></div></div>
+</div>
+
+<button id="glitch-btn" onclick="triggerGaster()">☠︎︎⚐︎✞︎☜︎☼︎🕈︎☼︎✋︎❄︎☜︎</button>
+
+<script>
+const AU_DATA = {
+    "classic": { name: "Classic Sans", desc: "The anchor of the multiverse. You are powerful enough to be dangerous, but wise enough to be lazy. You value puns, shortcuts, and family above all else." },
+    "fell": { name: "Underfell Sans", desc: "A survivor of a cruel world. You've grown a thick, edgy shell to protect yourself, but you are fiercely loyal to those who earn your respect." },
+    "swap": { name: "Underswap Sans", desc: "Pure energy and optimism. You believe everyone can be a good person if they just try. You are the 'Blueberry' of your friend group." },
+    "ink": { name: "Ink!Sans", desc: "The Protector of Creation. You are an artist who feels emotions through vials and lives to see new stories unfold. You are eccentric and flighty." },
+    "error": { name: "Error!Sans", desc: "The Cleaner. You see the clutter of the multiverse and feel the need to delete the glitches. You value space, silence, and your crochet." },
+    "dream": { name: "Dream!Sans", desc: "The Beacon of Positivity. You carry the weight of everyone's hopes on your shoulders. You are a natural peacemaker." },
+    "nightmare": { name: "Nightmare!Sans", desc: "The King of Shadows. You understand that pain is an inevitable part of existence. You lead with a cold, logical hand." },
+    "dust": { name: "Dust!Sans", desc: "Driven to the edge. You've made the ultimate sacrifice—your own sanity—to stop a greater evil. You are a tragic, lone wolf." },
+    "killer": { name: "Killer!Sans", desc: "Apathy incarnate. You've stopped feeling the weight of your actions. Life is a game of numbers and targets to you now." },
+    "horror": { name: "Horror!Sans", desc: "Grim survivalist. You've lived through the worst hunger imaginable. You are blunt, terrifying, and fiercely protective of your territory." },
+    "reaper": { name: "Reaper!Sans", desc: "The God of Death. You take the long view on everything. You are calm, philosophical, and have a very dark sense of humor." },
+    "science": { name: "Science Sans", desc: "The Intellectual. You trust data over feelings. You are curious about the mechanics of the soul and the secrets of the lab." },
+    "outer": { name: "Outer!Sans", desc: "The Star-Gazer. You have a peaceful soul and a whimsical outlook. You prefer the quiet beauty of the cosmos to the chaos of the underground." },
+    "fresh": { name: "Fresh!Sans", desc: "The Radical Mask. You hide a terrifying, parasitic power behind 90s neon and slang. No one truly knows what's behind your glasses." },
+    "epic": { name: "Epic!Sans", desc: "The 'Bruh' Legend. You are incredibly powerful but choose to live for memes and cookies. You only get serious when things get truly dire." },
+    "gaster": { name: "X-GASTER", desc: "You have stepped outside the script. You are the Architect of the X-Event. Perfection is the only acceptable outcome. Overwrite successful." }
+};
+
+const questions = [
+    { q: "You find a 'Save Point' that isn't yours. What do you do?", a: ["Leave it alone. It's not mine.", "Try to hack into its data.", "Try to use it to help someone.", "Destroy it. It shouldn't exist."], s: ["classic", "science", "swap", "error"], v: {lv: -5, dt: 15, br: 0, js: 0, it: 5, pt: 10} },
+    { q: "A fight is inevitable. What is your strategy?", a: ["Dodge until they get tired.", "Hit hard and fast. End it.", "Try to talk them down first.", "Trap them so they can't move."], s: ["classic", "fell", "dream", "error"], v: {lv: 10, dt: 5, br: 10, js: 0, it: 0, pt: 15} },
+    { q: "You are accused of something you didn't do.", a: ["Make a joke and walk away.", "Angrily defend your honor.", "Silently accept it to keep peace.", "Find the real culprit and expose them."], s: ["classic", "fell", "dream", "science"], v: {lv: 0, dt: 5, br: 10, js: 15, it: 15, pt: 5} },
+    { q: "Pick a way to be remembered.", a: ["As a good friend.", "As a powerful leader.", "As a great creator.", "I don't want to be remembered."], s: ["swap", "nightmare", "ink", "reaper"], v: {lv: 5, dt: 15, br: 5, js: 5, it: 10, pt: 0} },
+    { q: "The Multiverse is dying. Your reaction?", a: ["Take a nap. Nothing matters.", "Fight the cause of death.", "Draw a new world.", "Help the dying find peace."], s: ["classic", "fell", "ink", "reaper"], v: {lv: 0, dt: 20, br: 15, js: 5, it: 0, pt: 10} },
+    { q: "Your best friend asks for a dangerous favor.", a: ["Sure, why not?", "Only if it makes sense.", "Of course! Anything for them.", "No. It's too risky."], s: ["classic", "science", "swap", "error"], v: {lv: 0, dt: 5, br: 15, js: 0, it: 15, pt: 5} },
+    { q: "You find a 'glitch' in your favorite memory.", a: ["Ignore it. It's still a good memory.", "Analyze the cause of the glitch.", "Try to fix the memory.", "Delete the memory. It's tainted."], s: ["classic", "science", "dream", "error"], v: {lv: 5, dt: 10, br: 0, js: 0, it: 10, pt: 15} },
+    { q: "Someone is crying in the dark.", a: ["Give them a hug.", "Ask them what's wrong.", "Stay back and watch.", "Tell them to get over it."], s: ["dream", "swap", "horror", "fell"], v: {lv: 5, dt: 0, br: 5, js: 10, it: 10, pt: 10} },
+    { q: "What is 'Home'?", a: ["A place with my family.", "A quiet lab.", "Under the stars.", "Nowhere. I'm a wanderer."], s: ["classic", "science", "outer", "ink"], v: {lv: -5, dt: 5, br: 0, js: 5, it: 10, pt: 15} },
+    { q: "A human falls. You are the first they see.", a: ["'Heya.'", "Attack immediately.", "Offer them a taco!", "Stare creepily."], s: ["classic", "fell", "swap", "horror"], v: {lv: 15, dt: 10, br: 10, js: 5, it: 0, pt: 5} },
+    { q: "You have a secret. How long can you keep it?", a: ["Forever. I'm good at secrets.", "Until I can trust someone.", "I'd accidentally blab it.", "Why would I have a secret?"], s: ["classic", "nightmare", "swap", "fresh"], v: {lv: 5, dt: 5, br: 0, js: 5, it: 15, pt: 20} },
+    { q: "Pick a vibe.", a: ["Cozy & Lazy.", "Sharp & Dangerous.", "Bright & Loud.", "Dark & Quiet."], s: ["classic", "fell", "fresh", "nightmare"], v: {lv: 5, dt: 5, br: 5, js: 0, it: 5, pt: 15} },
+    { q: "A reset happens. You remember everything.", a: ["'Here we go again.'", "Try to stop the next one.", "Use the knowledge for fun.", "Slowly lose my mind."], s: ["classic", "dust", "fresh", "killer"], v: {lv: 10, dt: 20, br: 5, js: 5, it: 0, pt: 5} }, // Q13
+    { q: "You are offered 'Ultimate Power'.", a: ["Too much work.", "I'll take it to rule.", "I'll take it to protect.", "Power is a lie."], s: ["classic", "nightmare", "dream", "error"], v: {lv: 15, dt: 15, br: 5, js: 5, it: 0, pt: 0} },
+    { q: "What is your biggest regret?", a: ["Not doing enough.", "Being too weak.", "Trusting the wrong person.", "I don't have regrets."], s: ["classic", "fell", "dust", "killer"], v: {lv: 10, dt: 5, br: 5, js: 5, it: 15, pt: 5} },
+    { q: "Someone needs a hero.", a: ["I'm just a skeleton.", "I'll do it for a price.", "I'm already on it!", "Heroism is for fools."], s: ["classic", "fell", "swap", "nightmare"], v: {lv: 0, dt: 10, br: 20, js: 15, it: 10, pt: 0} },
+    { q: "The Void is...", a: ["A place for a nap.", "Terrifying.", "A blank canvas.", "My home."], s: ["classic", "dream", "ink", "error"], v: {lv: 0, dt: 10, br: 5, js: 0, it: 0, pt: 25} },
+    { q: "You see a mirror. Who is looking back?", a: ["A tired guy.", "A monster.", "A star.", "A stranger."], s: ["classic", "fell", "outer", "killer"], v: {lv: 5, dt: 5, br: 0, js: 5, it: 15, pt: 5} },
+    { q: "Pick a weapon.", a: ["A pun.", "A sharp bone.", "A paintbrush.", "A scythe."], s: ["classic", "fell", "ink", "reaper"], v: {lv: 10, dt: 10, br: 10, js: 5, it: 0, pt: 5} },
+    { q: "The most important trait is...", a: ["Patience.", "Bravery.", "Justice.", "Determination."], s: ["reaper", "fell", "swap", "dust"], v: {lv: 0, dt: 15, br: 15, js: 15, it: 10, pt: 15} },
+    { q: "You are bored. You...", a: ["Sleep.", "Prank someone.", "Create an AU.", "Destroy an AU."], s: ["classic", "fresh", "ink", "error"], v: {lv: 10, dt: 5, br: 0, js: 0, it: 0, pt: 15} },
+    { q: "A human is being kind to you.", a: ["Suspect them.", "Be kind back.", "Don't care.", "Try to eat them."], s: ["fell", "swap", "killer", "horror"], v: {lv: 15, dt: 0, br: 0, js: 5, it: 10, pt: 10} },
+    { q: "The color of your soul is...", a: ["White.", "Red.", "Yellow.", "Rainbow."], s: ["classic", "dust", "swap", "ink"], v: {lv: 5, dt: 15, br: 5, js: 10, it: 10, pt: 0} },
+    { q: "Your brother is...", a: ["Everything.", "A nuisance.", "Cooler than me.", "Gone."], s: ["classic", "fell", "swap", "dust"], v: {lv: 5, dt: 5, br: 5, js: 10, it: 20, pt: 5} },
+    { q: "Pick a snack.", a: ["Ketchup.", "Mustard.", "Tacos.", "Whatever is around."], s: ["classic", "fell", "swap", "horror"], v: {lv: 0, dt: 5, br: 5, js: 5, it: 5, pt: 10} },
+    { q: "You feel like...", a: ["A comedian.", "A soldier.", "An artist.", "A god."], s: ["classic", "fell", "ink", "reaper"], v: {lv: 10, dt: 15, br: 10, js: 5, it: 5, pt: 5} },
+    { q: "The truth is...", a: ["Funny.", "Painful.", "Subjective.", "Hidden."], s: ["classic", "dust", "ink", "nightmare"], v: {lv: 5, dt: 10, br: 0, js: 5, it: 15, pt: 10} },
+    { q: "You have one wish.", a: ["A longer nap.", "To be stronger.", "To save them.", "To erase it all."], s: ["classic", "fell", "dream", "error"], v: {lv: 10, dt: 20, br: 10, js: 10, it: 10, pt: 0} },
+    { q: "Your theme song is...", a: ["Chill.", "Edgy.", "Upbeat.", "Glitched."], s: ["classic", "fell", "swap", "error"], v: {lv: 5, dt: 5, br: 5, js: 5, it: 5, pt: 15} },
+    { q: "Final thought?", a: ["'Bruh.'", "It's kill or be killed.", "Mweh heh heh!", "I'm out."], s: ["epic", "fell", "swap", "killer"], v: {lv: 10, dt: 10, br: 10, js: 10, it: 10, pt: 10} }
+];
+
+let currentIdx = 0;
+let userScores = {};
+let traitScores = {lv: 10, dt: 10, br: 10, js: 10, it: 10, pt: 10};
+let selectedResult = "";
+let currentWeights = null;
+
+function updateBars() {
+    const keys = ['lv', 'dt', 'br', 'js', 'it', 'pt'];
+    keys.forEach(k => {
+        let val = Math.min(Math.max(traitScores[k], 5), 100);
+        document.getElementById(k + '-bar').style.width = val + '%';
+        document.getElementById(k + '-val').innerText = Math.round(val);
+    });
+}
+
+function loadQuestion() {
+    const data = questions[currentIdx];
+    document.getElementById("progress-header").innerText = (currentIdx + 1).toString().padStart(2, '0');
+    document.getElementById("question-text").innerText = data.q;
+    const optContainer = document.getElementById("options");
+    optContainer.innerHTML = "";
+    document.getElementById("next-btn").style.display = "none";
+    
+    if (currentIdx === 12) document.getElementById("glitch-btn").style.display = "block";
+    else document.getElementById("glitch-btn").style.display = "none";
+
+    data.a.forEach((text, i) => {
+        const btn = document.createElement("button");
+        btn.innerText = text;
+        btn.onclick = () => {
+            selectedResult = data.s[i];
+            currentWeights = data.v;
+            const allBtns = optContainer.querySelectorAll("button");
+            allBtns.forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            document.getElementById("next-btn").style.display = "block";
+        };
+        optContainer.appendChild(btn);
+    });
+}
+
+function processAnswer() {
+    userScores[selectedResult] = (userScores[selectedResult] || 0) + 1;
+    for (let key in currentWeights) {
+        traitScores[key] += currentWeights[key]; 
+    }
+    updateBars();
+    currentIdx++;
+    if (currentIdx < questions.length) loadQuestion();
+    else showFinalResult(null);
+}
+
+function triggerGaster() { showFinalResult("gaster"); }
+
+function showFinalResult(forcedKey) {
+    document.getElementById("quiz-ui").style.display = "none";
+    document.getElementById("glitch-btn").style.display = "none";
+    const winnerKey = forcedKey || Object.keys(userScores).reduce((a, b) => userScores[a] > userScores[b] ? a : b);
+    const finalAU = AU_DATA[winnerKey];
+    document.getElementById("res-name").innerText = "SOUL TYPE: " + finalAU.name;
+    document.getElementById("res-desc").innerText = finalAU.desc;
+    document.getElementById("result-screen").style.display = "block";
+    if (forcedKey === "gaster") {
+        document.body.style.backgroundColor = "#fff";
+        document.body.style.color = "#000";
+        document.getElementById("quiz-box").style.borderColor = "#000";
+        document.getElementById("traits-container").style.borderColor = "#000";
+    }
+}
+
+updateBars();
+loadQuestion();
+</script>
+</body>
+</html>
